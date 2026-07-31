@@ -92,6 +92,7 @@ curl -i -X POST http://localhost:3000/tasks \\
 \`\`\`
 
 ## Database screenshot
+<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/fce4c60c-dd49-4e3c-9da6-710c467547e9" />
 
 ## Example SQL query
 
