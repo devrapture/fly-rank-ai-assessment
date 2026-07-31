@@ -1,8 +1,34 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import openapiDocument from "./openapi.json" with { type: "json" };
+import Database from "better-sqlite3";
 const app = express();
 const PORT = 3000;
+
+const db = new Database("tasks.db");
+
+db.prepare(`
+	CREATE TABLE IF NOT EXISTS tasks (
+		id INTEGER PRIMARY KEY,
+		title TEXT NOT NULL,
+		done INTEGER NOT NULL
+	)
+`).run();
+
+const taskCount = db
+	.prepare("SELECT COUNT(*) AS count FROM tasks")
+	.get() as { count: number };
+
+	if (taskCount.count === 0) {
+		const insertTask = db.prepare(`
+			INSERT INTO tasks (title, done)
+			VALUES (?, ?)
+		`);
+	
+		insertTask.run("study for maths test", 0);
+		insertTask.run("laundry", 1);
+		insertTask.run("gym", 0);
+	}
 
 app.use(express.json());
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(openapiDocument));
