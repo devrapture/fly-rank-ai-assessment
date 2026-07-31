@@ -1,19 +1,40 @@
 # Task API
 
-A simple in-memory to-do list REST API built with Node.js, Express, and TypeScript.
+A persistent to-do list REST API built with Node.js, Express, TypeScript and SQLite.
 
 ## Features
-- Full CRUD for tasks (create, read, update, delete)
+
+- Full CRUD for tasks
+- Persistent task storage using SQLite
+- Automatic database and table creation
 - Input validation with clear JSON error messages
-- Interactive API docs via Swagger UI
-- Strict TypeScript, no database required
+- Interactive API documentation through Swagger UI
 
 ## Technologies
+
 - Node.js
 - Express
 - TypeScript
-- swagger-ui-express / OpenAPI 3.0
-- tsx (dev runtime)
+- SQLite
+- better-sqlite3
+- swagger-ui-express
+- tsx
+
+## Why SQLite?
+
+SQLite was chosen because it is lightweight and stores the complete database in a single file. It does not require a separate database server or additional installation.
+
+This makes it suitable for a small CRUD project while allowing task data to survive application restarts.
+
+## Database
+
+The application stores task data in:
+
+`tasks.db`
+
+The file is created automatically in the root of the project when the application starts.
+
+The application also creates the `tasks` table automatically when it does not already exist.
 
 ## Requirements
 - Node.js 18+
@@ -70,8 +91,14 @@ curl -i -X POST http://localhost:3000/tasks \\
 }
 \`\`\`
 
-## Data persistence
-Data is stored **in memory only** — in a plain array inside the running process. Restarting the server resets it back to the three seed tasks. There is no database in this project.
+## Database screenshot
+
+## Example SQL query
+
+The following query returns all completed tasks:
+
+```sql
+SELECT * FROM tasks WHERE done = 1;
 
 ## Project structure
 \`\`\`text
