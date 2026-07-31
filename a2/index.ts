@@ -7,49 +7,39 @@ const PORT = 3000;
 
 const db = new Database("tasks.db");
 
-db.prepare(`
+db.prepare(
+	`
 	CREATE TABLE IF NOT EXISTS tasks (
 		id INTEGER PRIMARY KEY,
 		title TEXT NOT NULL,
 		done INTEGER NOT NULL
 	)
-`).run();
+`,
+).run();
 
-const taskCount = db
-	.prepare("SELECT COUNT(*) AS count FROM tasks")
-	.get() as { count: number };
+type TaskRow = {
+	id: number;
+	title: string;
+	done: number;
+};
 
-	if (taskCount.count === 0) {
-		const insertTask = db.prepare(`
+const taskCount = db.prepare("SELECT COUNT(*) AS count FROM tasks").get() as {
+	count: number;
+};
+
+if (taskCount.count === 0) {
+	const insertTask = db.prepare(`
 			INSERT INTO tasks (title, done)
 			VALUES (?, ?)
 		`);
-	
-		insertTask.run("study for maths test", 0);
-		insertTask.run("laundry", 1);
-		insertTask.run("gym", 0);
-	}
+
+	insertTask.run("study for maths test", 0);
+	insertTask.run("laundry", 1);
+	insertTask.run("gym", 0);
+}
 
 app.use(express.json());
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(openapiDocument));
-
-const tasks = [
-	{
-		id: 1,
-		title: "study for maths test",
-		done: false,
-	},
-	{
-		id: 2,
-		title: "laundry",
-		done: true,
-	},
-	{
-		id: 3,
-		title: "gym",
-		done: false,
-	},
-];
 
 app.get("/", (req, res) => {
 	res.json({
@@ -66,16 +56,32 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/tasks", (req, res) => {
+	const rows = db.prepare("SELECT * FROM tasks").all() as TaskRow[];
+	const tasks = rows.map((row) => ({
+		id: row.id,
+		title: row.title,
+		done: Boolean(row.done),
+	}));
 	res.json(tasks);
 });
 
 app.get("/tasks/:id", ({ params }, res) => {
 	const id = Number(params.id);
-	const task = tasks.find((t) => t.id == id);
-	if (!task) {
-		res.status(404).json({ error: "Task id not found" });
+
+	const row = db
+		.prepare("SELECT * FROM tasks WHERE id = ?")
+		.get(id) as TaskRow | undefined;
+
+	if (!row) {
+		res.status(404).json({ error: "Task not found" });
 		return;
 	}
+
+	const task = {
+		id: row.id,
+		title: row.title,
+		done: Boolean(row.done),
+	};
 
 	res.json(task);
 });
@@ -127,7 +133,7 @@ app.put("/tasks/:id", ({ params, body }, res) => {
 			res.status(400).json({ error: "Done must be a boolean" });
 			return;
 		}
-        task.done = done;
+		task.done = done;
 	}
 	res.json(task);
 });
