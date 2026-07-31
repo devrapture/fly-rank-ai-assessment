@@ -68,9 +68,9 @@ app.get("/tasks", (req, res) => {
 app.get("/tasks/:id", ({ params }, res) => {
 	const id = Number(params.id);
 
-	const row = db
-		.prepare("SELECT * FROM tasks WHERE id = ?")
-		.get(id) as TaskRow | undefined;
+	const row = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as
+		| TaskRow
+		| undefined;
 
 	if (!row) {
 		res.status(404).json({ error: "Task not found" });
@@ -94,14 +94,21 @@ app.post("/tasks", (req, res) => {
 		return;
 	}
 
-	const nextId = tasks.length + 1;
+	const result = db
+		.prepare(
+			`
+			INSERT INTO tasks (title, done)
+			VALUES (?, ?)
+		`,
+		)
+		.run(title.trim(), 0);
 
 	const newTask = {
-		id: nextId,
+		id: Number(result.lastInsertRowid),
 		title: title.trim(),
 		done: false,
 	};
-	tasks.push(newTask);
+
 	res.status(201).json(newTask);
 });
 
