@@ -1,0 +1,33 @@
+# OS
+.DS_Store
+
+# Node
+node_modules/
+
+# Bun
+.bun/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Runtime data
+*.sqlite
+*.sqlite3
+coverage/
