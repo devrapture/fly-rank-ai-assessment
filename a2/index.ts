@@ -114,12 +114,16 @@ app.post("/tasks", (req, res) => {
 
 app.put("/tasks/:id", ({ params, body }, res) => {
 	const id = Number(params.id);
-	const task = tasks.find((t) => t.id == id);
 
-	if (!task) {
-		res.status(404).json({ error: "Task id not found" });
+	const existingTask = db
+		.prepare("SELECT * FROM tasks WHERE id = ?")
+		.get(id) as TaskRow | undefined;
+
+	if (!existingTask) {
+		res.status(404).json({ error: "Task not found" });
 		return;
 	}
+
 	const { title, done } = body ?? {};
 
 	if (title === undefined && done === undefined) {
@@ -127,34 +131,52 @@ app.put("/tasks/:id", ({ params, body }, res) => {
 		return;
 	}
 
-	if (title !== undefined) {
-		if (typeof title !== "string" || title.trim().length === 0) {
-			res.status(400).json({ error: "Title must not be an empty string" });
-			return;
-		}
-		task.title = title;
+	if (
+		title !== undefined &&
+		(typeof title !== "string" || title.trim().length === 0)
+	) {
+		res.status(400).json({
+			error: "Title must not be an empty string",
+		});
+		return;
 	}
 
-	if (done !== undefined) {
-		if (typeof done !== "boolean") {
-			res.status(400).json({ error: "Done must be a boolean" });
-			return;
-		}
-		task.done = done;
+	if (done !== undefined && typeof done !== "boolean") {
+		res.status(400).json({ error: "Done must be a boolean" });
+		return;
 	}
-	res.json(task);
+
+	const updatedTitle = title === undefined ? existingTask.title : title.trim();
+
+	const updatedDone = done === undefined ? existingTask.done : done ? 1 : 0;
+
+	db.prepare(
+		`
+		UPDATE tasks
+		SET title = ?, done = ?
+		WHERE id = ?
+	`,
+	).run(updatedTitle, updatedDone, id);
+
+	const updatedTask = {
+		id,
+		title: updatedTitle,
+		done: Boolean(updatedDone),
+	};
+
+	res.json(updatedTask);
 });
 
 app.delete("/tasks/:id", ({ params }, res) => {
 	const id = Number(params.id);
-	const index = tasks.findIndex((t) => t.id == id);
 
-	if (index === -1) {
-		res.status(404).json({ error: `Task id ${id} not found` });
+	const result = db.prepare("DELETE FROM tasks WHERE id = ?").run(id);
+
+	if (result.changes === 0) {
+		res.status(404).json({ error: "Task not found" });
 		return;
 	}
 
-	tasks.splice(index, 1);
 	res.status(204).send();
 });
 
