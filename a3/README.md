@@ -178,18 +178,6 @@ bun run dev                    # run the app locally against the containerised P
 bun run type-check             # TypeScript check
 ```
 
-## Database screenshot
-
-<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/fce4c60c-dd49-4e3c-9da6-710c467547e9" />
-
-## Example SQL query
-
-The following query returns all completed tasks:
-
-```sql
-SELECT * FROM tasks WHERE done = TRUE;
-```
-
 ## Project structure
 
 ```text
