@@ -1,11 +1,20 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import openapiDocument from "./openapi.json" with { type: "json" };
-import { createTaskRepository } from "./src/repositories";
-import type { TaskRepository } from "./src/repositories/taskRepository";
+import { SQL } from "bun";
+import { PostgresTaskRepository } from "./src/postgres-task-repository";
+import { TaskService } from "./src/task-service";
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3000);
+
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is required");
+}
+
+const sql = new SQL(process.env.DATABASE_URL);
+const repository = new PostgresTaskRepository(sql);
+const taskService = new TaskService(repository);
 
 app.use(express.json());
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(openapiDocument));
@@ -24,16 +33,15 @@ app.get("/health", (req, res) => {
 	});
 });
 
-function registerRoutes(repo: TaskRepository) {
-	app.get("/tasks", async (req, res) => {
-		const tasks = await repo.list();
+function registerRoutes(taskService: TaskService) {
+	app.get("/tasks", async (_req, res) => {
+		const tasks = await taskService.findAll();
 		res.json(tasks);
 	});
 
 	app.get("/tasks/:id", async ({ params }, res) => {
 		const id = Number(params.id);
-
-		const task = await repo.get(id);
+		const task = await taskService.findById(id);
 
 		if (!task) {
 			res.status(404).json({ error: "Task not found" });
@@ -51,15 +59,13 @@ function registerRoutes(repo: TaskRepository) {
 			return;
 		}
 
-		const newTask = await repo.create(title.trim());
-
-		res.status(201).json(newTask);
+		const task = await taskService.create(title.trim());
+		res.status(201).json(task);
 	});
 
 	app.put("/tasks/:id", async ({ params, body }, res) => {
 		const id = Number(params.id);
-
-		const existingTask = await repo.get(id);
+		const existingTask = await taskService.findById(id);
 
 		if (!existingTask) {
 			res.status(404).json({ error: "Task not found" });
@@ -88,22 +94,17 @@ function registerRoutes(repo: TaskRepository) {
 			return;
 		}
 
-		const updatedTitle = title === undefined ? existingTask.title : title.trim();
-		const updatedDone = done === undefined ? existingTask.done : done;
-
-		await repo.update(id, updatedTitle, updatedDone);
-
-		res.json({
-			id,
-			title: updatedTitle,
-			done: updatedDone,
+		const task = await taskService.update(id, {
+			title: title === undefined ? undefined : title.trim(),
+			done,
 		});
+
+		res.json(task);
 	});
 
 	app.delete("/tasks/:id", async ({ params }, res) => {
 		const id = Number(params.id);
-
-		const deleted = await repo.remove(id);
+		const deleted = await taskService.delete(id);
 
 		if (!deleted) {
 			res.status(404).json({ error: "Task not found" });
@@ -115,9 +116,7 @@ function registerRoutes(repo: TaskRepository) {
 }
 
 async function main() {
-	const repo = await createTaskRepository();
-	await repo.seedIfEmpty();
-	registerRoutes(repo);
+	registerRoutes(taskService);
 
 	app.listen(PORT, () => {
 		console.log(`Server listening at port ${PORT}`);
