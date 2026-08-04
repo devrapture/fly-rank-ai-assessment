@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { supabase } from "../supabase";
+import { requireAuth } from "../middleware/require-auth";
+import { config } from "../config";
 
 export const authRouter = Router();
 
@@ -62,3 +64,21 @@ authRouter.post("/login", async (req, res) => {
     token_type: data.session.token_type,
   });
 });
+
+
+authRouter.post("/logout", requireAuth, async (req, res) => {
+    const response = await fetch(`${config.supabaseUrl}/auth/v1/logout?scope=local`, {
+      method: "POST",
+      headers: {
+        apikey: config.supabaseKey,
+        Authorization: `Bearer ${req.accessToken!}`,
+      },
+    });
+  
+    if (!response.ok) {
+      res.status(400).json({ error: "Unable to log out" });
+      return;
+    }
+  
+    res.status(204).send();
+  });
