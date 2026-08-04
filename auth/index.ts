@@ -128,10 +128,11 @@
 
 import express from "express";
 import { config } from "./src/config";
-import "./src/supabase";
+import { authRouter } from "./src/routes/auth";
 
 const app = express();
 app.use(express.json());
+app.use("/auth", authRouter);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
