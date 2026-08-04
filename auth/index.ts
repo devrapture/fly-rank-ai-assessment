@@ -129,10 +129,17 @@
 import express from "express";
 import { config } from "./src/config";
 import { authRouter } from "./src/routes/auth";
+import { publicRouter } from "./src/routes/public";
+import { protectedRouter } from "./src/routes/protected";
+
+
 
 const app = express();
 app.use(express.json());
 app.use("/auth", authRouter);
+
+app.use("/public", publicRouter);
+app.use("/protected", protectedRouter);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
